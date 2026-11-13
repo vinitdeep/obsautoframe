@@ -53,7 +53,7 @@ jobs:
           path: release/*
 
   macos-universal:
-    runs-on: macos-14   # Apple silicon runner; the Intel slice is tested through Rosetta
+    runs-on: macos-latest   # Apple silicon runner; the Intel slice is tested through Rosetta
     steps:
       - uses: actions/checkout@v4
 

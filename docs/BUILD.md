@@ -71,6 +71,26 @@ scripts\package.ps1
 Produces in `release\`: `VMedia-AI-AutoFrame-Setup-x64.exe`,
 `VMedia-AI-AutoFrame-<version>-x64.zip`, `SHA256SUMS.txt`, `RELEASE_NOTES.md`.
 
+## macOS build (.pkg inside a .dmg)
+
+Needs a Mac (macOS 13+) with Xcode command line tools (`xcode-select --install`), CMake 3.24+,
+Git and, for the detector test, ffmpeg (`brew install cmake ffmpeg`).
+
+```bash
+bash scripts/setup-macos.sh      # OBS 30.0 API headers, OBS 33.0.1 (Apple + Intel) libobs,
+                                 # ONNX Runtime 1.23.2 universal2, YOLOX models
+bash scripts/package-macos.sh    # universal build, unit + detector tests, load test inside
+                                 # the real OBS.app (Apple + Intel via Rosetta), .pkg, .dmg
+```
+
+Output: `release/VMedia-AI-AutoFrame-<version>-macOS.dmg` (+ `.sha256`). The build is ad-hoc
+signed. To sign for distribution set `MACOS_SIGN_IDENTITY` ("Developer ID Application: ...") and
+`MACOS_INSTALLER_IDENTITY` ("Developer ID Installer: ..."), then notarize the DMG with
+`xcrun notarytool submit ... --wait` and `xcrun stapler staple`.
+
+Without a Mac, run the **build** workflow on GitHub (Actions > build > Run workflow): the
+`macos-universal` job uploads the DMG as an artifact.
+
 ## 4. Developer tools
 
 | Tool | Purpose |

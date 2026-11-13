@@ -21,13 +21,19 @@ Instagram, Facebook and TikTok live.
   x264 recordings with the AI running.
 * **Tracking graphics never go on air** - boxes and stats appear only in preview windows; every
   frame of the stream / recording is clean (verified frame by frame).
-* **OBS 30, 31, 32, 33** (64-bit Windows 10/11).
+* **OBS 30, 31, 32, 33** - Windows 10/11 64-bit and macOS 12+ (Apple silicon + Intel).
 
 ## Download
 
 Get the latest installer from **[Releases](https://github.com/vinitdeep/obsautoframe/releases)**:
-`VMedia-AI-AutoFrame-Setup-x64.exe` (or the ZIP for manual / portable installs).
-Close OBS, run the installer, start OBS. Details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+* **Windows:** `VMedia-AI-AutoFrame-Setup-x64.exe` (or the ZIP for manual / portable installs).
+  Close OBS, run the installer, start OBS.
+* **Mac:** `VMedia-AI-AutoFrame-<version>-macOS.dmg`. Open it, double-click
+  *Install V Media AI AutoFrame.pkg*. Not notarized yet: if macOS blocks it, use
+  System Settings > Privacy & Security > Open Anyway.
+
+Details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 ## How to use - quick guide
 
