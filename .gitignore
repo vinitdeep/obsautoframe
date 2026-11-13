@@ -1,0 +1,7 @@
+/build/
+/release/
+/third_party/
+/tests/media/
+/tests/out/
+*.user
+.vs/

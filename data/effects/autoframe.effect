@@ -1,0 +1,96 @@
+// V Media AI AutoFrame - sub-pixel crop/zoom.
+// The crop is passed as a UV transform (float precision), so slow pans move smoothly
+// instead of stepping one whole pixel at a time.
+
+uniform float4x4 ViewProj;
+uniform texture2d image;
+uniform float2 uv_offset;
+uniform float2 uv_scale;
+uniform float2 base_dimension; // source texture size in pixels
+uniform float sharpness;       // 0 = off; unsharp-mask amount for upscaled (zoomed / vertical) output
+
+sampler_state textureSampler {
+	Filter    = Linear;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSCrop(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv * uv_scale + uv_offset;
+	return vert_out;
+}
+
+float4 PSBilinear(VertData v_in) : TARGET
+{
+	return image.Sample(textureSampler, v_in.uv);
+}
+
+// Catmull-Rom bicubic using 9 bilinear taps: noticeably sharper digital zoom.
+float4 PSBicubic(VertData v_in) : TARGET
+{
+	float2 tex_size = base_dimension;
+	float2 sample_pos = v_in.uv * tex_size;
+	float2 tex_pos1 = floor(sample_pos - 0.5) + 0.5;
+	float2 f = sample_pos - tex_pos1;
+
+	float2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
+	float2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+	float2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
+	float2 w3 = f * f * (-0.5 + 0.5 * f);
+
+	float2 w12 = w1 + w2;
+	float2 offset12 = w2 / w12;
+
+	float2 p0 = (tex_pos1 - 1.0) / tex_size;
+	float2 p3 = (tex_pos1 + 2.0) / tex_size;
+	float2 p12 = (tex_pos1 + offset12) / tex_size;
+
+	float4 result = float4(0.0, 0.0, 0.0, 0.0);
+	result += image.Sample(textureSampler, float2(p0.x,  p0.y))  * w0.x  * w0.y;
+	result += image.Sample(textureSampler, float2(p12.x, p0.y))  * w12.x * w0.y;
+	result += image.Sample(textureSampler, float2(p3.x,  p0.y))  * w3.x  * w0.y;
+	result += image.Sample(textureSampler, float2(p0.x,  p12.y)) * w0.x  * w12.y;
+	result += image.Sample(textureSampler, float2(p12.x, p12.y)) * w12.x * w12.y;
+	result += image.Sample(textureSampler, float2(p3.x,  p12.y)) * w3.x  * w12.y;
+	result += image.Sample(textureSampler, float2(p0.x,  p3.y))  * w0.x  * w3.y;
+	result += image.Sample(textureSampler, float2(p12.x, p3.y))  * w12.x * w3.y;
+	result += image.Sample(textureSampler, float2(p3.x,  p3.y))  * w3.x  * w3.y;
+
+	if (sharpness > 0.0) {
+		// unsharp mask with a one-camera-pixel radius: restores edge contrast lost when a
+		// small crop is enlarged (e.g. a 608x1080 vertical crop shown at 1080x1920)
+		float2 d = 1.0 / tex_size;
+		float4 blur = image.Sample(textureSampler, v_in.uv + float2(d.x, 0.0)) +
+			      image.Sample(textureSampler, v_in.uv - float2(d.x, 0.0)) +
+			      image.Sample(textureSampler, v_in.uv + float2(0.0, d.y)) +
+			      image.Sample(textureSampler, v_in.uv - float2(0.0, d.y));
+		result.rgb += sharpness * (result.rgb - blur.rgb * 0.25);
+	}
+	return max(result, float4(0.0, 0.0, 0.0, 0.0));
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader  = PSBilinear(v_in);
+	}
+}
+
+technique DrawBicubic
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader  = PSBicubic(v_in);
+	}
+}

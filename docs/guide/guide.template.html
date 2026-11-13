@@ -1,0 +1,274 @@
+<title>AutoFrame Quick Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a single vertical run sheet - hero diagram, six real setup steps, then service-time controls.
+   Palette borrows from a broadcast desk: navy console ink, tally-light red for "on air",
+   tracking-lock green for what the AI follows. */
+:root {
+  --paper: #f2f4f8;
+  --card: #ffffff;
+  --ink: #14213b;
+  --muted: #56647f;
+  --line: #d6dce6;
+  --tally: #d23a2b;
+  --lock: #0e9a57;
+  --crop: #2f6fe0;
+  --chip: #e6ebf3;
+  --display: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1420; --card: #151d2c; --ink: #e8edf5; --muted: #95a3bb; --line: #27334a;
+    --tally: #ff6a5a; --lock: #37d27f; --crop: #6c9cff; --chip: #1e2839; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1420; --card: #151d2c; --ink: #e8edf5; --muted: #95a3bb; --line: #27334a;
+  --tally: #ff6a5a; --lock: #37d27f; --crop: #6c9cff; --chip: #1e2839; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet { max-width: 1080px; margin: 0 auto; padding-block: 40px 56px; display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(40px, 7vw, 68px); font-weight: 700; letter-spacing: 0.01em; }
+h2 { font-size: 30px; font-weight: 700; }
+h3 { font-size: 21px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 18px; max-width: 62ch; color: var(--ink); }
+.muted { color: var(--muted); }
+code, .set { font-family: var(--mono); font-size: 13px; background: var(--chip); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.on-air { color: var(--tally); font-weight: 600; }
+
+/* ---------- hero */
+header { display: grid; gap: 14px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.55fr) auto minmax(0, 1fr); gap: 18px; align-items: center; }
+.cam { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+.cam img { display: block; width: 100%; height: auto; }
+.cam svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cam-label { position: absolute; left: 10px; bottom: 10px; font-family: var(--mono); font-size: 11px; color: #fff;
+  background: rgba(10, 16, 28, 0.72); padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em; }
+.arrow { font-family: var(--display); font-size: 40px; color: var(--muted); }
+.outs { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 12px; align-items: end; }
+.out { display: grid; gap: 6px; }
+.frame { border-radius: 8px; border: 2px solid var(--crop); background-image: url({{WIDE}}); background-repeat: no-repeat; }
+.f169 { aspect-ratio: 16 / 9; background-size: 140% auto; background-position: 79.2% 42.7%; }
+.f916 { aspect-ratio: 9 / 16; border-color: var(--tally); background-size: 355.6% auto; background-position: 61.5% 55%; }
+.cap { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
+.lg-lock::before { background: var(--lock); } .lg-crop::before { background: var(--crop); } .lg-v::before { background: var(--tally); }
+
+/* ---------- steps */
+.steps { display: grid; gap: 18px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid;
+  grid-template-columns: 56px minmax(0, 1fr); gap: 4px 18px; }
+.num { font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 0.9; color: var(--crop); grid-row: span 2; }
+.step-body { display: grid; gap: 12px; min-width: 0; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+ol.do, ul.do { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.shot { border-radius: 8px; border: 1px solid var(--line); display: block; width: 100%; height: auto; }
+.presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.preset { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 4px; align-content: start; background: var(--paper); }
+.preset b { font-family: var(--display); font-size: 19px; font-weight: 600; }
+.preset span { font-size: 13px; color: var(--muted); }
+.diagram { width: 100%; height: auto; display: block; }
+.verticals { display: flex; gap: 12px; flex-wrap: wrap; }
+.vshot { display: grid; gap: 6px; width: 150px; }
+.vshot img { width: 100%; border-radius: 8px; border: 2px solid var(--tally); display: block; }
+.note { border-left: 3px solid var(--lock); padding: 6px 0 6px 12px; font-size: 14px; }
+.note.warn { border-color: var(--tally); }
+
+/* ---------- live */
+.live { display: grid; gap: 14px; }
+.cmp-caps { display: grid; grid-template-columns: 55% 45%; font-size: 13px; }
+.cmp-caps p:first-child { padding-right: 12px; }
+
+/* ---------- during the service */
+.keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.key { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; align-content: start; }
+.key b { font-weight: 600; }
+.key span { font-size: 13px; color: var(--muted); }
+.tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.tip { display: grid; gap: 4px; }
+.tip h3 { font-size: 19px; }
+footer { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .arrow { transform: rotate(90deg); justify-self: center; }
+  .split, .presets { grid-template-columns: minmax(0, 1fr); }
+  .presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .step { grid-template-columns: minmax(0, 1fr); }
+  .num { grid-row: auto; }
+  .cmp-caps { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+</style>
+
+<div class="sheet">
+  <header>
+    <div class="eyebrow">V Media Production · OBS Studio plugin · v1.1.1</div>
+    <h1>AutoFrame Quick Guide</h1>
+    <p class="lede">One fixed camera. The AI finds the preacher and moves a <em>virtual</em> camera inside the picture to keep them framed, for a normal 16:9 stream and a 9:16 vertical one. Everything runs on your PC; nothing is uploaded.</p>
+  </header>
+
+  <section class="hero" aria-label="How AutoFrame works">
+    <div class="cam">
+      <img src="{{WIDE}}" alt="Wide camera picture of a presenter at a whiteboard">
+      <svg viewBox="0 0 640 360" aria-hidden="true">
+        <rect x="328" y="70" width="90" height="265" fill="none" stroke="var(--lock)" stroke-width="3"/>
+        <rect x="328" y="56" width="70" height="14" fill="var(--lock)"/>
+        <text x="332" y="67" font-family="JetBrains Mono, monospace" font-size="10" fill="#fff">#1 LOCK</text>
+        <rect x="145" y="44" width="457" height="257" fill="none" stroke="var(--crop)" stroke-width="3" stroke-dasharray="10 6"/>
+        <rect x="283" y="22" width="180" height="320" fill="none" stroke="var(--tally)" stroke-width="3" stroke-dasharray="4 5"/>
+      </svg>
+      <span class="cam-label">WHAT THE CAMERA SEES · 1920×1080</span>
+    </div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="outs">
+      <div class="out"><div class="frame f169" role="img" aria-label="16:9 framed output"></div><span class="cap">16:9 stream</span></div>
+      <div class="out"><div class="frame f916" role="img" aria-label="9:16 vertical framed output"></div><span class="cap">9:16 · 1080×1920</span></div>
+    </div>
+  </section>
+  <div class="legend"><span class="lg-lock">Person the AI follows</span><span class="lg-crop">16:9 virtual camera</span><span class="lg-v">9:16 vertical virtual camera</span></div>
+
+  <section class="steps" aria-label="Setup">
+    <h2>Set it up once</h2>
+
+    <article class="step">
+      <div class="num">1</div>
+      <h3>Install the plugin</h3>
+      <div class="step-body">
+        <ol class="do">
+          <li>Close OBS Studio (version 30 or newer).</li>
+          <li>Run <code>VMedia-AI-AutoFrame-Setup-x64.exe</code> and click <b>Yes</b> on the Windows admin prompt.</li>
+          <li>Start OBS. It finds the plugin by itself; nothing inside the OBS folder is changed.</li>
+        </ol>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="num">2</div>
+      <h3>Add the filter to your camera</h3>
+      <div class="step-body split">
+        <div style="display:grid;gap:12px">
+          <ol class="do">
+            <li>Right-click your camera or capture-card source → <b>Filters</b>.</li>
+            <li>Under <b>Effect Filters</b> click <b>+</b> → <b>V Media AI AutoFrame</b>.</li>
+            <li>Wait a second for <code>Ready</code> in the status line.</li>
+          </ol>
+          <p class="note">This Filters window is your monitor: it shows the tracking box, the person number and the live stats.</p>
+        </div>
+        <img class="shot" src="{{FILTERS}}" alt="OBS Filters window with V Media AI AutoFrame selected, live preview with tracking box and the settings panel">
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="num">3</div>
+      <h3>Pick a framing preset</h3>
+      <div class="step-body">
+        <p>In <b>General → Framing preset</b>. It fills in sensible framing, zoom and movement values that you can fine-tune later.</p>
+        <div class="presets">
+          <div class="preset"><b>Church Preacher</b><span>Waist up, slow and calm, holds still at the pulpit.</span></div>
+          <div class="preset"><b>Worship Leader</b><span>Ignores raised hands so the shot doesn't bounce.</span></div>
+          <div class="preset"><b>Group</b><span>Frames the whole team, or the lead plus whoever fits.</span></div>
+          <div class="preset"><b>Medium Shot</b><span>Teachers, speakers, interviews.</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="num">4</div>
+      <h3>Show it where the stage is</h3>
+      <div class="step-body split">
+        <svg class="diagram" viewBox="0 0 480 270" role="img" aria-label="Stage diagram: stage area box above the congregation, pulpit zone in the middle">
+          <rect x="0" y="0" width="480" height="270" rx="10" fill="var(--paper)" stroke="var(--line)"/>
+          <rect x="0" y="150" width="480" height="40" fill="var(--chip)"/>
+          <rect x="190" y="18" width="100" height="172" fill="var(--crop)" opacity="0.12"/>
+          <text x="240" y="34" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--crop)">PULPIT ZONE</text>
+          <rect x="220" y="118" width="40" height="44" rx="3" fill="var(--muted)"/>
+          <circle cx="240" cy="70" r="11" fill="var(--ink)"/><rect x="226" y="83" width="28" height="40" rx="8" fill="var(--ink)"/>
+          <circle cx="360" cy="78" r="10" fill="var(--ink)" opacity="0.75"/><rect x="348" y="90" width="24" height="56" rx="7" fill="var(--ink)" opacity="0.75"/>
+          <rect x="14" y="12" width="452" height="182" fill="none" stroke="var(--lock)" stroke-width="2.5" stroke-dasharray="8 5"/>
+          <text x="22" y="186" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--lock)">STAGE AREA · bottom edge just below the stage floor</text>
+          <circle cx="70" cy="238" r="26" fill="var(--muted)" opacity="0.55"/><rect x="38" y="254" width="64" height="16" fill="var(--muted)" opacity="0.55"/>
+          <circle cx="160" cy="246" r="24" fill="var(--muted)" opacity="0.55"/>
+          <circle cx="330" cy="244" r="25" fill="var(--muted)" opacity="0.55"/>
+          <circle cx="420" cy="240" r="27" fill="var(--muted)" opacity="0.55"/>
+          <text x="466" y="207" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--tally)">congregation - ignored</text>
+        </svg>
+        <ol class="do">
+          <li><b>Subject Tracking → Stage area bottom edge</b>: drag it up until it sits just below the stage floor. Only people whose <b>feet</b> stand inside the box are followed, so heads in the front rows never steal the shot.</li>
+          <li>Ask the preacher to stand at the pulpit, then press <b>Set pulpit to the preacher's current position</b>. While they stay there, the shot stays perfectly still.</li>
+          <li>Turn on <b>Debug → Show dead zone, pulpit zone and stage area</b> to see the boxes in the Filters window while you adjust.</li>
+        </ol>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="num">5</div>
+      <h3>Choose landscape or vertical</h3>
+      <div class="step-body split">
+        <div style="display:grid;gap:12px">
+          <p><b>Landscape 16:9:</b> keep <span class="set">Output aspect ratio: Same as camera</span>.</p>
+          <p><b>Vertical 1080×1920</b> for YouTube Shorts, Instagram, Facebook or TikTok live:</p>
+          <ol class="do">
+            <li>OBS <b>Settings → Video</b>: Base and Output resolution <code>1080x1920</code>.</li>
+            <li>In the filter: <span class="set">Output aspect ratio: 9:16</span>, <span class="set">Output resolution: Auto</span>. The camera then fills the canvas exactly.</li>
+            <li><span class="set">Detail sharpening</span> 20-40% helps a 1080p camera; a 4K camera gives the sharpest vertical picture.</li>
+          </ol>
+          <p class="note">Both at once? Keep the camera itself clean, put it in two scenes, and add one AutoFrame filter to each scene: 16:9 on one, 9:16 on the other.</p>
+        </div>
+        <div class="verticals">
+          <div class="vshot"><img src="{{VPREACHER}}" alt="Vertical 1080x1920 output following a presenter"><span class="cap">Preacher, 9:16</span></div>
+          <div class="vshot"><img src="{{VBAND}}" alt="Vertical output framing the lead singer of a band"><span class="cap">Worship team, 9:16 · lead singer kept whole</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="num">6</div>
+      <h3>Go live. Viewers never see the tracking boxes.</h3>
+      <div class="step-body live">
+        <img class="shot" src="{{COMPARE}}" alt="During a recording: OBS main preview is clean while the Filters window shows tracking boxes and stats">
+        <div class="cmp-caps">
+          <p><b class="on-air">On air:</b> the main preview is exactly what the stream and recording get. Clean picture, no boxes, no text.</p>
+          <p><b>For you:</b> the Filters window (or Studio Mode's preview, or a source projector) shows the boxes and stats.</p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section style="display:grid;gap:16px" aria-label="During the service">
+    <h2>During the service</h2>
+    <p class="muted">Assign these in OBS <b>Settings → Hotkeys</b> (listed under the filter's name) or a Stream Deck. Every change is a smooth move, never a jump.</p>
+    <div class="keys">
+      <div class="key"><b>Pause / resume tracking</b><span>Freeze the shot where it is.</span></div>
+      <div class="key"><b>Force wide shot</b><span>Glide to the full camera picture.</span></div>
+      <div class="key"><b>Lock current position</b><span>Hold this framing; zoom keys still work.</span></div>
+      <div class="key"><b>Zoom in / Zoom out</b><span>10% steps.</span></div>
+      <div class="key"><b>Follow next / previous person</b><span>Switch who the camera follows.</span></div>
+      <div class="key"><b>Switch single person / group</b><span>Sermon ↔ worship set.</span></div>
+      <div class="key"><b>Reset framing</b><span>Back to automatic tracking.</span></div>
+      <div class="key"><b>Reset zoom to 1.0×</b><span>The full picture.</span></div>
+    </div>
+  </section>
+
+  <section class="tips" aria-label="Tips">
+    <div class="tip"><h3>If the preacher steps away</h3><p class="muted">The shot holds for 2.5 s, then glides to a safe wide shot, and picks them up again when they return.</p></div>
+    <div class="tip"><h3>Computer working hard?</h3><p class="muted">Pick <span class="set">Processing mode: Low CPU</span> or tick <span class="set">Use GPU acceleration</span> (works on GTX 1650/1660, no RTX needed).</p></div>
+    <div class="tip"><h3>Frame the camera wide</h3><p class="muted">Digital zoom can only crop. Leave room around everywhere the preacher walks; AutoFrame does the rest.</p></div>
+  </section>
+
+  <footer>
+    <span>V Media AI AutoFrame · V Media Production</span>
+    <span>Offline · no account · no face recognition</span>
+  </footer>
+</div>

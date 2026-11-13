@@ -1,0 +1,23 @@
+V Media AI AutoFrame - by V Media Production
+
+AI auto-framing for OBS Studio: keeps a preacher, presenter or performer framed with smooth
+digital pan, tilt and zoom - no PTZ camera needed.
+
+Requirements
+  - Windows 10 or 11, 64-bit
+  - OBS Studio 30 or newer (tested with OBS Studio 33.0.1)
+  - Any modern CPU. Optional GPU acceleration on any DirectX 12 graphics card
+    (GTX 1650 / 1660 and newer - no RTX, CUDA or TensorRT required)
+
+Before you continue
+  - Close OBS Studio.
+
+After installing
+  1. Start OBS Studio.
+  2. Right-click your camera / capture card source > Filters.
+  3. Click + under "Effect Filters" and choose "V Media AI AutoFrame".
+  4. Pick a Framing preset (for example "Church Preacher Mode").
+
+Privacy
+  All video is processed on this computer. Nothing is uploaded, no internet connection is
+  used, no account or subscription is needed, and there is no face recognition.
