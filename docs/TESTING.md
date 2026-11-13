@@ -1,4 +1,4 @@
-# Testing
+﻿# Testing
 
 Everything below marked **PASS** was actually executed. Anything not executed is listed under
 *Not yet tested* - nothing there is claimed to work.
@@ -182,7 +182,7 @@ relative-path handling in the libobs harness are the regression tests for it.
 
 ## 7. Manual OBS checklist (for the first real church setup)
 
-1. [ ] Install with the installer; OBS log shows `V Media AI AutoFrame 1.1.1 loaded`.
+1. [ ] Install with the installer; OBS log shows `V Media AI AutoFrame 1.1.2 loaded`.
 2. [ ] Add the filter to the capture card source; status shows `Ready: 416x416 input, CPU`.
 3. [ ] Choose Church Preacher Mode; enable boxes + guides; the preacher has a green LOCK box.
 4. [ ] Set the stage area bottom edge above the congregation; only stage people get boxes picked.
@@ -212,3 +212,18 @@ frames of a recording clean incl. the first; graphics toggled during a recording
 clean. In the user's installed OBS (1.1.1 via the installer): recording made while the Filters
 window showed boxes and stats - **665 of 665 frames clean**; main preview clean at the same
 moment; 0 leaks, no crash.
+
+## 9. Webcam / phone camera close to the person (1.1.2, user-reported)
+
+*Bug:* in the user's OBS with an Iriun phone webcam the filter reported `TRACKING ... zoom 1.00x`
+and the shot never moved: the person sat close to the camera (cut off at the bottom) at ~85 % of
+the width; a waist-up shot of such a close person is "bigger than the picture", so the crop
+stayed at the whole picture with no room to move.
+
+*Fix:* when the person is cut off at the bottom, zoom in just enough for a crop centred on them
+(within Maximum zoom). Unit test `zoom_webcam_close_person_at_edge_gets_centred` (was 27 % off
+centre at 1.00x; now < 20 % at max zoom 1.4, < 7 % at 2.0); stage behaviour unchanged (all other
+tests pass). Real footage close-up clip: 1.2-1.4x, 5-17 % off centre.
+
+*Verified in the user's OBS* (1.1.2 via installer, live Iriun camera 1920x1080):
+`TRACKING | 8.9 detections/s | 25.4 ms | zoom 2.00x`, person centred, head in shot.

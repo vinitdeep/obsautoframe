@@ -51,3 +51,39 @@ jobs:
         with:
           name: VMedia-AI-AutoFrame-windows-x64
           path: release/*
+
+  macos-universal:
+    runs-on: macos-14   # Apple silicon runner; the Intel slice is tested through Rosetta
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/dl
+            third_party/models
+          key: deps-macos-${{ hashFiles('scripts/setup-macos.sh') }}
+
+      - name: Install tools
+        run: |
+          brew install ffmpeg
+          softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Dependencies (OBS API headers, OBS.app Apple + Intel, ONNX Runtime universal2, models)
+        run: bash scripts/setup-macos.sh
+
+      - name: Test media
+        shell: pwsh
+        continue-on-error: true   # third-party CDN; the detector test skips clips it cannot get
+        run: ./tests/fetch-test-media.ps1
+
+      - name: Build + tests + load test in OBS + package (.pkg inside .dmg)
+        run: bash scripts/package-macos.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VMedia-AI-AutoFrame-macOS
+          path: |
+            release/*.dmg
+            release/*.sha256

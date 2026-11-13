@@ -43,7 +43,7 @@ public:
 	 *  - head placed `headroom` below the top edge, horizontal offset applied
 	 *  - zoom limited to [minZoom, maxZoom]  (manual zoom bias multiplies the crop height) */
 	static Shot compose(const RectF &subject, bool truncatedBottom, const AutoFrameConfig &cfg, float aspect,
-			    const ZoomLimits &lim, float zoomBias);
+			    const ZoomLimits &lim, float zoomBias, float srcW = 0.0f);
 };
 
 } // namespace vmaf

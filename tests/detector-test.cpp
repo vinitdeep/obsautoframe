@@ -13,18 +13,15 @@
 #include <string>
 #include <vector>
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
+#include <filesystem>
 
 using namespace vmaf;
 
 namespace {
 
-std::wstring widen(const std::string &s)
+std::string widen(const std::string &s) // paths are UTF-8 on every platform
 {
-	return std::wstring(s.begin(), s.end());
+	return s;
 }
 
 struct Case {
@@ -70,7 +67,7 @@ int main(int argc, char **argv)
 	const bool bench = argc > 1 && strcmp(argv[1], "--bench") == 0;
 	const std::string media = std::string(VMAF_TESTDATA_DIR) + "/../media/";
 	const std::string out = std::string(VMAF_TESTDATA_DIR) + "/../out/";
-	CreateDirectoryA(out.c_str(), nullptr);
+	std::filesystem::create_directories(out);
 
 	struct ModelDef {
 		const char *name;

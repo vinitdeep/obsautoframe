@@ -1,4 +1,4 @@
-# Installing V Media AI AutoFrame
+﻿# Installing V Media AI AutoFrame
 
 ## System requirements
 
@@ -52,7 +52,7 @@ C:\ProgramData\obs-studio\plugins\vmedia-ai-autoframe\data\...
 `Help > Log Files > View Current Log` should contain:
 
 ```
-[vmedia-autoframe] V Media AI AutoFrame 1.1.1 loaded (built for libobs 30.0.0)
+[vmedia-autoframe] V Media AI AutoFrame 1.1.2 loaded (built for libobs 30.0.0)
 ```
 
 Then right-click a source > **Filters** > **+** (Effect Filters) - **V Media AI AutoFrame** is in

@@ -13,21 +13,19 @@
 namespace vmaf {
 
 struct DetectorOptions {
-	std::wstring runtimeDir;     // folder containing onnxruntime.dll (+ DirectML.dll)
-	std::wstring modelPath;      // .onnx file
+	std::string runtimeDir;      // UTF-8: folder with onnxruntime.dll (+ DirectML.dll) / libonnxruntime.dylib
+	std::string modelPath;       // UTF-8: .onnx file
 	std::string expectedSha256;  // bundled models are verified; empty = skip (custom model)
 	int threads = 2;             // CPU intra-op threads
-	bool useGpu = false;         // DirectML on the high-performance GPU, falls back to CPU
+	bool useGpu = false;         // DirectML (Windows) / Core ML (macOS); falls back to CPU
 };
 
 /* Loads onnxruntime.dll from `runtimeDir` (by full path, never from PATH or the OBS folder,
  * so it cannot clash with another plugin's copy). Process-wide, idempotent, thread-safe. */
-bool loadOrtRuntime(const std::wstring &runtimeDir, std::string &err);
+bool loadOrtRuntime(const std::string &runtimeDir, std::string &err);
 /* Releases the shared ONNX Runtime environment. Call once at module unload. */
 void shutdownOrtRuntime();
 
-/* SHA-256 of a file as lowercase hex (Windows CNG). Empty string on failure. */
-std::string sha256File(const std::wstring &path);
 
 class PersonDetector {
 public:

@@ -3,6 +3,9 @@
 #include "person-detector.hpp"
 #include "yolox.hpp"
 
+#include "sha256.hpp"
+
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -10,54 +13,92 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#include <bcrypt.h>
+#else
+#include <dlfcn.h>
+#endif
 
-// ORT_API_MANUAL_INIT is defined project-wide: we never link onnxruntime.lib, the
-// runtime is loaded on demand so a missing/broken runtime cannot stop OBS from starting.
+// ORT_API_MANUAL_INIT is defined project-wide: we never link the ONNX Runtime import library;
+// the runtime is loaded on demand so a missing/broken runtime cannot stop OBS from starting.
 #include <onnxruntime_cxx_api.h>
+#ifdef _WIN32
 #include <dml_provider_factory.h>
+#endif
 #include <onnxruntime_session_options_config_keys.h>
 
+#include <algorithm>
 #include <cstdio>
+#include <filesystem>
 #include <mutex>
+
+namespace fs = std::filesystem;
 
 namespace vmaf {
 
 namespace {
 std::mutex g_ortMutex;
-HMODULE g_ortModule = nullptr;
+void *g_ortModule = nullptr;
 const OrtApi *g_api = nullptr;
 Ort::Env *g_env = nullptr;
 std::string g_loadError;
 
+#ifdef _WIN32
+constexpr const char *kRuntimeFile = "onnxruntime.dll";
+#elif defined(__APPLE__)
+constexpr const char *kRuntimeFile = "libonnxruntime.dylib";
+#else
+constexpr const char *kRuntimeFile = "libonnxruntime.so";
+#endif
+
 /* OBS hands out RELATIVE data paths ("../../data/obs-plugins/...") for portable and
- * in-program-folder installs. LoadLibraryExW(LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) rejects
- * relative paths, so everything is made absolute first. */
-std::wstring absolutePath(const std::wstring &p)
+ * in-program-folder installs. LoadLibraryExW(LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) rejects relative
+ * paths, so everything is made absolute first. Paths are UTF-8 throughout. */
+fs::path absolutePath(const std::string &utf8path)
 {
-	if (p.empty())
-		return p;
-	const DWORD n = GetFullPathNameW(p.c_str(), 0, nullptr, nullptr);
-	if (!n)
-		return p;
-	std::wstring out(n, L'\0');
-	const DWORD m = GetFullPathNameW(p.c_str(), n, out.data(), nullptr);
-	out.resize(m);
-	return out;
+	std::error_code ec;
+	const fs::path p = fs::u8path(utf8path);
+	const fs::path a = fs::absolute(p, ec);
+	return ec ? p : a.lexically_normal();
 }
 
-std::string narrow(const std::wstring &w)
+std::string utf8(const fs::path &p)
 {
-	if (w.empty())
-		return {};
-	const int n = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
-	std::string s((size_t)n, '\0');
-	WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), s.data(), n, nullptr, nullptr);
-	return s;
+	const auto u = p.u8string();
+	return std::string(u.begin(), u.end());
+}
+
+void *openLibrary(const fs::path &file, std::string &why)
+{
+#ifdef _WIN32
+	// LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR: DirectML.dll is resolved from the same private folder
+	HMODULE m = LoadLibraryExW(file.wstring().c_str(), nullptr,
+				   LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+	if (!m) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Windows error %lu", GetLastError());
+		why = buf;
+	}
+	return (void *)m;
+#else
+	void *m = dlopen(file.c_str(), RTLD_NOW | RTLD_LOCAL);
+	if (!m) {
+		const char *e = dlerror();
+		why = e ? e : "dlopen failed";
+	}
+	return m;
+#endif
+}
+
+void *findSymbol(void *module, const char *name)
+{
+#ifdef _WIN32
+	return (void *)GetProcAddress((HMODULE)module, name);
+#else
+	return dlsym(module, name);
+#endif
 }
 } // namespace
 
-bool loadOrtRuntime(const std::wstring &runtimeDir, std::string &err)
+bool loadOrtRuntime(const std::string &runtimeDir, std::string &err)
 {
 	std::lock_guard<std::mutex> lock(g_ortMutex);
 	if (g_env)
@@ -67,22 +108,20 @@ bool loadOrtRuntime(const std::wstring &runtimeDir, std::string &err)
 		return false;
 	}
 	if (runtimeDir.empty()) {
-		// obs_module_file() returns nothing when data\runtime does not exist
-		err = "the plugin's data\\runtime folder (ONNX Runtime) is missing - please reinstall the plugin";
+		// obs_module_file() returns nothing when the runtime folder does not exist
+		err = "the plugin's runtime folder (ONNX Runtime) is missing - please reinstall the plugin";
 		return false; // not cached: a reinstall + filter re-add can recover without restarting OBS
 	}
-	const std::wstring dll = absolutePath(runtimeDir + L"\\onnxruntime.dll");
-	// LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR: DirectML.dll is resolved from the same private folder
-	g_ortModule = LoadLibraryExW(dll.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+	const fs::path lib = absolutePath(runtimeDir) / kRuntimeFile;
+	std::string why;
+	g_ortModule = openLibrary(lib, why);
 	if (!g_ortModule) {
-		char buf[64];
-		snprintf(buf, sizeof(buf), " (Windows error %lu)", GetLastError());
-		g_loadError = "Could not load ONNX Runtime from " + narrow(dll) + buf;
+		g_loadError = "Could not load ONNX Runtime from " + utf8(lib) + " (" + why + ")";
 		err = g_loadError;
 		return false;
 	}
 	using GetApiBaseFn = const OrtApiBase *(ORT_API_CALL *)(void);
-	auto getApiBase = reinterpret_cast<GetApiBaseFn>(GetProcAddress(g_ortModule, "OrtGetApiBase"));
+	auto getApiBase = reinterpret_cast<GetApiBaseFn>(findSymbol(g_ortModule, "OrtGetApiBase"));
 	const OrtApiBase *base = getApiBase ? getApiBase() : nullptr;
 	g_api = base ? base->GetApi(ORT_API_VERSION) : nullptr;
 	if (!g_api) {
@@ -109,45 +148,8 @@ void shutdownOrtRuntime()
 	std::lock_guard<std::mutex> lock(g_ortMutex);
 	delete g_env;
 	g_env = nullptr;
-	// onnxruntime.dll stays loaded until process exit: unloading it while DirectML or
+	// the runtime library stays loaded until process exit: unloading it while GPU or
 	// thread-pool threads may still be winding down is a classic shutdown crash.
-}
-
-std::string sha256File(const std::wstring &path)
-{
-	HANDLE f = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-			       FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
-	if (f == INVALID_HANDLE_VALUE)
-		return {};
-	BCRYPT_ALG_HANDLE alg = nullptr;
-	BCRYPT_HASH_HANDLE hash = nullptr;
-	std::string hex;
-	if (BCryptOpenAlgorithmProvider(&alg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) == 0 &&
-	    BCryptCreateHash(alg, &hash, nullptr, 0, nullptr, 0, 0) == 0) {
-		std::vector<unsigned char> buf(1 << 20);
-		DWORD got = 0;
-		bool ok = true;
-		while (ReadFile(f, buf.data(), (DWORD)buf.size(), &got, nullptr) && got > 0) {
-			if (BCryptHashData(hash, buf.data(), got, 0) != 0) {
-				ok = false;
-				break;
-			}
-		}
-		unsigned char digest[32];
-		if (ok && BCryptFinishHash(hash, digest, sizeof(digest), 0) == 0) {
-			static const char *k = "0123456789abcdef";
-			for (unsigned char c : digest) {
-				hex.push_back(k[c >> 4]);
-				hex.push_back(k[c & 15]);
-			}
-		}
-	}
-	if (hash)
-		BCryptDestroyHash(hash);
-	if (alg)
-		BCryptCloseAlgorithmProvider(alg, 0);
-	CloseHandle(f);
-	return hex;
 }
 
 /* Every ORT object lives in a unique_ptr that is only filled after the runtime loaded:
@@ -193,18 +195,27 @@ bool PersonDetector::load(const DetectorOptions &opts, std::string &err)
 	if (!loadOrtRuntime(opts.runtimeDir, err))
 		return false;
 
-	if (GetFileAttributesW(opts.modelPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-		err = "Model file not found: " + narrow(opts.modelPath);
+	const fs::path model = absolutePath(opts.modelPath);
+	std::error_code ec;
+	if (opts.modelPath.empty() || !fs::exists(model, ec)) {
+		err = "Model file not found: " + opts.modelPath;
 		return false;
 	}
 	if (!opts.expectedSha256.empty()) {
-		const std::string sha = sha256File(opts.modelPath);
+		const std::string sha = sha256File(utf8(model));
 		if (sha != opts.expectedSha256) {
-			err = "Model file failed integrity check (SHA-256 mismatch): " + narrow(opts.modelPath) +
+			err = "Model file failed integrity check (SHA-256 mismatch): " + opts.modelPath +
 			      ". Reinstall the plugin.";
 			return false;
 		}
 	}
+#ifdef _WIN32
+	const std::wstring modelArg = model.wstring(); // ORTCHAR_T is wchar_t on Windows
+	const char *gpuName = "DirectML";
+#else
+	const std::string modelArg = model.string();
+	const char *gpuName = "CoreML";
+#endif
 
 	try {
 		auto makeOptions = [&](bool gpu, std::string &provider) {
@@ -218,6 +229,7 @@ bool PersonDetector::load(const DetectorOptions &opts, std::string &err)
 			so.AddConfigEntry(kOrtSessionOptionsConfigAllowInterOpSpinning, "0");
 			provider = "CPU";
 			if (gpu) {
+#ifdef _WIN32
 				const OrtDmlApi *dml = nullptr;
 				Ort::ThrowOnError(g_api->GetExecutionProviderApi("DML", ORT_API_VERSION,
 										 reinterpret_cast<const void **>(&dml)));
@@ -227,6 +239,11 @@ bool PersonDetector::load(const DetectorOptions &opts, std::string &err)
 				dev.Filter = OrtDmlDeviceFilter::Gpu;
 				Ort::ThrowOnError(dml->SessionOptionsAppendExecutionProvider_DML2(so, &dev));
 				provider = "DirectML (GPU)";
+#else
+				// Apple GPU / Neural Engine through Core ML
+				so.AppendExecutionProvider("CoreML", {{"MLComputeUnits", "ALL"}});
+				provider = "CoreML (GPU)";
+#endif
 			}
 			return so;
 		};
@@ -235,15 +252,15 @@ bool PersonDetector::load(const DetectorOptions &opts, std::string &err)
 		if (opts.useGpu) {
 			try {
 				Ort::SessionOptions so = makeOptions(true, provider);
-				impl_->session = std::make_unique<Ort::Session>(*g_env, opts.modelPath.c_str(), so);
+				impl_->session = std::make_unique<Ort::Session>(*g_env, modelArg.c_str(), so);
 			} catch (const Ort::Exception &e) {
 				impl_->session.reset();
-				err = std::string("GPU (DirectML) unavailable, using CPU: ") + e.what();
+				err = std::string("GPU (") + gpuName + ") unavailable, using CPU: " + e.what();
 			}
 		}
 		if (!impl_->session) {
 			Ort::SessionOptions so = makeOptions(false, provider);
-			impl_->session = std::make_unique<Ort::Session>(*g_env, opts.modelPath.c_str(), so);
+			impl_->session = std::make_unique<Ort::Session>(*g_env, modelArg.c_str(), so);
 		}
 		impl_->provider = provider;
 

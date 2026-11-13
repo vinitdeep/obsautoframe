@@ -1,11 +1,11 @@
-# Troubleshooting
+﻿# Troubleshooting
 
 First look at the filter's **General** status line (press *Refresh status*) and the OBS log
 (*Help > Log Files > View Current Log*, search for `vmedia-autoframe`).
 
 ### The filter is not in the list
 
-* Check the log for `V Media AI AutoFrame 1.1.1 loaded`. If it is missing, check the folder
+* Check the log for `V Media AI AutoFrame 1.1.2 loaded`. If it is missing, check the folder
   layout in `docs/INSTALLATION.md` (the DLL must be in `...\vmedia-ai-autoframe\bin\64bit\`).
 * OBS older than 30.0 is not supported. 32-bit OBS is not supported.
 * If the log says `compiled with newer libobs`, you have an OBS older than the plugin's API

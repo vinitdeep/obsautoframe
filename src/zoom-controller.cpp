@@ -47,7 +47,7 @@ float ZoomController::estimatedBodyHeight(const RectF &s, bool truncatedBottom)
 }
 
 Shot ZoomController::compose(const RectF &subject, bool truncatedBottom, const AutoFrameConfig &cfg, float aspect,
-			     const ZoomLimits &lim, float zoomBias)
+			     const ZoomLimits &lim, float zoomBias, float srcW)
 {
 	const Composition &c = cfg.composition;
 	float h;
@@ -59,6 +59,19 @@ Shot ZoomController::compose(const RectF &subject, bool truncatedBottom, const A
 		const float needW = subject.w * (1.0f + 2.0f * std::max(0.0f, cfg.safeMargin));
 		if (aspect > 0.0f)
 			h = std::max(h, needW / aspect);
+
+		// Close to the camera (webcam, desk, phone camera): the person runs off the bottom of the
+		// picture, so the requested shot is "bigger than the picture" and the crop would stay at
+		// zoom 1.0 - with no room to move, someone sitting at the edge would stay at the edge.
+		// Zoom in just enough that a crop centred on them fits inside the picture (they may stay
+		// within half the dead zone), keeping at least 60 % of their width in the shot.
+		if (truncatedBottom && srcW > 0.0f && aspect > 0.0f) {
+			const float sx = subject.cx();
+			const float tolerance = std::max(0.5f, 1.0f - 0.5f * std::max(0.0f, cfg.deadZoneX));
+			const float roomW = 2.0f * std::max(1.0f, std::min(sx, srcW - sx)) / tolerance;
+			const float centredH = std::max(roomW, 0.6f * subject.w) / aspect;
+			h = std::min(h, centredH);
+		}
 		h *= std::clamp(zoomBias, 0.25f, 4.0f);
 		h = std::clamp(h, lim.minH, lim.wideH);
 	} else {

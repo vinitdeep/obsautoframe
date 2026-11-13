@@ -140,8 +140,8 @@ int main(int argc, char **argv)
 	PersonDetector det;
 	DetectorOptions o;
 	const std::string modelFile = std::string(VMAF_MODELS_DIR) + (model == "tiny" ? "/yolox_tiny.onnx" : "/yolox_nano.onnx");
-	o.runtimeDir = std::wstring(VMAF_RUNTIME_DIR, VMAF_RUNTIME_DIR + strlen(VMAF_RUNTIME_DIR));
-	o.modelPath = std::wstring(modelFile.begin(), modelFile.end());
+	o.runtimeDir = VMAF_RUNTIME_DIR;
+	o.modelPath = modelFile;
 	o.threads = cfg.threads;
 	o.useGpu = cfg.useGpu;
 	std::string err;

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 V Media Production. GPL-2.0-or-later.
 #include "detection-worker.hpp"
 
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -9,6 +10,12 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#else
+#include <pthread.h>
+#ifdef __APPLE__
+#include <pthread/qos.h>
+#endif
+#endif
 
 #include <chrono>
 
@@ -98,8 +105,13 @@ std::string DetectionWorker::statusMessage() const
 void DetectionWorker::run(DetectorOptions opts)
 {
 	// Inference is background work: OBS rendering and encoding always come first.
+#ifdef _WIN32
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 	SetThreadDescription(GetCurrentThread(), L"vmedia-autoframe-ai");
+#elif defined(__APPLE__)
+	pthread_setname_np("vmedia-autoframe-ai");
+	pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
+#endif
 	// An exception escaping a std::thread calls std::terminate() and would take OBS down.
 	try {
 		runImpl(opts);

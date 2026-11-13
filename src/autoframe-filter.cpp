@@ -20,17 +20,6 @@ namespace {
 constexpr const char *kNanoSha = "c789161ed43c8269fcd4e67c67eeeb4e80c622da2eb296a20bc6007bd18a0b7d";
 constexpr const char *kTinySha = "427cc366d34e27ff7a03e2899b5e3671425c262ea2291f88bb942bc1cc70b0f7";
 
-std::wstring widen(const char *utf8)
-{
-	if (!utf8 || !*utf8)
-		return {};
-	wchar_t *w = nullptr;
-	os_utf8_to_wcs_ptr(utf8, 0, &w);
-	std::wstring out = w ? w : L"";
-	bfree(w);
-	return out;
-}
-
 std::string moduleFile(const char *rel)
 {
 	char *p = obs_module_file(rel);
@@ -43,7 +32,7 @@ std::string moduleFile(const char *rel)
 DetectorOptions detectorOptions(const AutoFrameConfig &c, std::string &key)
 {
 	DetectorOptions o;
-	o.runtimeDir = widen(moduleFile("runtime").c_str());
+	o.runtimeDir = moduleFile("runtime");
 	std::string model;
 	switch (c.model) {
 	case DetectorModel::YoloxTiny:
@@ -58,7 +47,7 @@ DetectorOptions detectorOptions(const AutoFrameConfig &c, std::string &key)
 		o.expectedSha256 = kNanoSha;
 		break;
 	}
-	o.modelPath = widen(model.c_str());
+	o.modelPath = model;
 	o.threads = c.threads;
 	o.useGpu = c.useGpu;
 	key = model + "|" + std::to_string(c.threads) + "|" + (c.useGpu ? "gpu" : "cpu");

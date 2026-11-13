@@ -1,4 +1,6 @@
-# SAVE - V Media AI AutoFrame (state as of 2026-11-13, v1.1.1)
+# SAVE - V Media AI AutoFrame (state as of 2026-11-13, v1.1.2)
+
+## v1.1.2: webcam fix - person cut off at bottom (close to camera) now zooms in to centre them (zoom-controller compose, single mode only). Verified on user Iriun cam: zoom 2.00x centred. Installed in user OBS. NOT yet committed/pushed to GitHub (28dd452 is 1.1.1).
 
 ## v1.1.1: debug graphics ONLY in preview windows (gs_get_render_target()==NULL), never in program/stream/recording - user requirement, do not add an option to draw into the program output (OBS queues frames before an output starts, so it always leaks). Non-framing settings no longer re-centre the shot. Installed in user OBS. Leak scanner: tests/check-overlay-leak.py.
 

@@ -3,6 +3,7 @@
 
 #include "geometry.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -10,12 +11,31 @@
 
 namespace vmaf {
 
+// Windows needs "rb"/"wb" for binary pipes; POSIX popen only accepts "r"/"w" (always binary).
+inline FILE *pipeOpen(const char *cmd, const char *mode)
+{
+#ifdef _WIN32
+	return _popen(cmd, mode);
+#else
+	return popen(cmd, mode[0] == 'w' ? "w" : "r");
+#endif
+}
+
+inline int pipeClose(FILE *p)
+{
+#ifdef _WIN32
+	return _pclose(p);
+#else
+	return pclose(p);
+#endif
+}
+
 inline bool probeVideo(const std::string &path, int &w, int &h, double &fps, double &duration)
 {
 	const std::string cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate "
 				"-show_entries format=duration -of default=nw=1 \"" +
 				path + "\"";
-	FILE *p = _popen(cmd.c_str(), "r");
+	FILE *p = pipeOpen(cmd.c_str(), "r");
 	if (!p)
 		return false;
 	char line[256];
@@ -34,7 +54,7 @@ inline bool probeVideo(const std::string &path, int &w, int &h, double &fps, dou
 		else if (sscanf(line, "duration=%lf", &d) == 1)
 			duration = d;
 	}
-	_pclose(p);
+	pipeClose(p);
 	return w > 0 && h > 0;
 }
 
@@ -58,7 +78,7 @@ public:
 		if (maxFrames > 0)
 			cmd += " -frames:v " + std::to_string(maxFrames);
 		cmd += " -f rawvideo -pix_fmt rgba -";
-		p_ = _popen(cmd.c_str(), "rb");
+		p_ = pipeOpen(cmd.c_str(), "rb");
 		return p_ != nullptr;
 	}
 	bool read(std::vector<uint8_t> &frame)
@@ -71,7 +91,7 @@ public:
 	void close()
 	{
 		if (p_)
-			_pclose(p_);
+			pipeClose(p_);
 		p_ = nullptr;
 	}
 	int width() const { return w_; }
@@ -96,7 +116,7 @@ public:
 			 "ffmpeg -v error -y -f rawvideo -pix_fmt rgba -s %dx%d -r %.3f -i - -c:v libx264 -preset veryfast "
 			 "-crf 20 -pix_fmt yuv420p \"%s\"",
 			 w, h, fps, path.c_str());
-		p_ = _popen(cmd, "wb");
+		p_ = pipeOpen(cmd, "wb");
 		return p_ != nullptr;
 	}
 	bool write(const std::vector<uint8_t> &frame)
@@ -106,7 +126,7 @@ public:
 	void close()
 	{
 		if (p_)
-			_pclose(p_);
+			pipeClose(p_);
 		p_ = nullptr;
 	}
 
@@ -120,11 +140,11 @@ inline bool writePng(const std::string &path, const std::vector<uint8_t> &rgba, 
 	char cmd[1024];
 	snprintf(cmd, sizeof(cmd), "ffmpeg -v error -y -f rawvideo -pix_fmt rgba -s %dx%d -i - -frames:v 1 \"%s\"", w, h,
 		 path.c_str());
-	FILE *p = _popen(cmd, "wb");
+	FILE *p = pipeOpen(cmd, "wb");
 	if (!p)
 		return false;
 	fwrite(rgba.data(), 1, rgba.size(), p);
-	return _pclose(p) == 0;
+	return pipeClose(p) == 0;
 }
 
 /* --- tiny drawing helpers for annotated output frames */

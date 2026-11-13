@@ -436,7 +436,8 @@ void FramingController::update(const PersonTracker &tracker, double now, float d
 			lastSubjectValid_ = true;
 			everHadSubject_ = true;
 			const bool truncated = subject.bottom() >= H_ * 0.97f;
-			Shot desired = ZoomController::compose(subject, truncated, cfg_, aspect_, lim_, zoomBias_);
+			Shot desired = ZoomController::compose(subject, truncated, cfg_, aspect_, lim_, zoomBias_,
+							       mode_ == TrackingMode::Single ? W_ : 0.0f);
 
 			bool anchored = false;
 			if (mode_ == TrackingMode::Single && cfg_.pulpitEnabled) {

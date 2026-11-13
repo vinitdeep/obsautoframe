@@ -1,5 +1,14 @@
 # V Media AI AutoFrame - release notes
 
+## 1.1.2 - webcam / phone camera close to the person
+
+* **Fixed:** with a webcam or phone camera (e.g. Iriun) close to the person, the shot stayed at
+  zoom 1.00x and never moved. The person runs off the bottom of the picture, so a waist-up shot
+  was "bigger than the picture". Now, when the person is cut off at the bottom, AutoFrame zooms
+  in just enough to bring them toward the centre (within *Maximum zoom*). Stage setups with the
+  full body visible are unchanged. Tip: for desk / webcam use set *Maximum zoom* to 1.8-2.0 so a
+  person sitting at the edge can be fully centred.
+
 ## 1.1.1 - tracking graphics can never reach the stream or recording
 
 * **Fixed:** the first ~0.8 s of every recording / stream could contain the debug boxes and the

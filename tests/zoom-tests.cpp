@@ -90,6 +90,42 @@ TEST(zoom_detail_guard_applies_while_tracking)
 	CHECK(s.violations == 0);
 }
 
+TEST(zoom_webcam_close_person_at_edge_gets_centred)
+{
+	// User report (Iriun phone webcam, 1280x720, Medium preset): person sitting close to the
+	// camera, cut off by the bottom edge, at ~77 % of the width. Before the fix the shot stayed
+	// at zoom 1.00x - the whole picture - so the framing never moved.
+	auto run = [](float maxZoom, float &zoom, float &offset, RectF &crop) {
+		AutoFrameConfig c = testConfig(FramingPreset::Medium);
+		c.maxZoom = maxZoom;
+		Sim s(c, 1280, 720);
+		s.world = [](double) { return std::vector<Detection>{{RectF{780, 40, 400, 680}, 0.9f}}; };
+		s.run(8);
+		zoom = s.out().zoom;
+		crop = s.out().crop;
+		offset = std::fabs(980.0f - crop.cx()) / crop.w;
+		CHECK(s.violations == 0);
+	};
+	float zoom = 0, offset = 0;
+	RectF crop;
+	run(1.4f, zoom, offset, crop);
+	CHECK_MSG(zoom > 1.35f, "zoom %.2f - the shot must zoom in to make room to centre the person", zoom);
+	CHECK_MSG(offset < 0.20f, "person still %.0f %% off centre (was 27 %% at zoom 1.0)", offset * 100);
+	CHECK(crop.y <= 40.0f); // head stays in the picture
+	run(2.0f, zoom, offset, crop);
+	CHECK_MSG(offset < 0.07f, "with max zoom 2.0 the person should be centred, off by %.0f %%", offset * 100);
+}
+
+TEST(zoom_stage_full_body_at_edge_not_affected_by_webcam_rule)
+{
+	// full body visible (not cut off) at the far left of a stage, Wide preset: stays wide
+	AutoFrameConfig c = testConfig(FramingPreset::Wide);
+	Sim s(c);
+	s.world = [](double) { return std::vector<Detection>{person(250, 300, 500)}; };
+	s.run(8);
+	CHECK_NEAR(s.out().zoom, 1.0, 0.02);
+}
+
 TEST(zoom_fixed_when_auto_zoom_off)
 {
 	AutoFrameConfig c = testConfig(FramingPreset::Medium);
