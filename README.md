@@ -21,7 +21,7 @@ Instagram, Facebook and TikTok live.
   x264 recordings with the AI running.
 * **Tracking graphics never go on air** - boxes and stats appear only in preview windows; every
   frame of the stream / recording is clean (verified frame by frame).
-* **OBS 30, 31, 32, 33** - Windows 10/11 64-bit and macOS 12+ (Apple silicon + Intel).
+* **OBS 30, 31, 32, 33** - Windows 10/11 64-bit and macOS 13.4+ (Apple silicon + Intel).
 
 ## Download
 

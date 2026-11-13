@@ -4,7 +4,7 @@
 
 | | Minimum | Recommended |
 |---|---|---|
-| OS | Windows 10 64-bit, or macOS 12 (Apple silicon / Intel) | Windows 11 64-bit, or macOS 14+ |
+| OS | Windows 10 64-bit, or macOS 13.4 (Apple silicon / Intel) | Windows 11 64-bit, or macOS 14+ |
 | OBS Studio | 30.0 (64-bit) | latest (tested with **33.0.1**) |
 | CPU | 4 cores | 6 cores / 12 threads (e.g. Intel i7-10750H, AMD Ryzen 5 3600) |
 | GPU | anything OBS runs on | optional: any DirectX 12 GPU for AI acceleration (GTX 1650 / 1660 and newer) |
@@ -49,7 +49,7 @@ C:\ProgramData\obs-studio\plugins\vmedia-ai-autoframe\data\...
 
 ## macOS (Apple silicon and Intel)
 
-Requirements: macOS 12 Monterey or newer, OBS Studio 30 or newer. One download works on both
+Requirements: macOS 13.4 Ventura or newer, OBS Studio 30 or newer. One download works on both
 Apple silicon (M1-M4) and Intel Macs.
 
 1. Quit OBS Studio.

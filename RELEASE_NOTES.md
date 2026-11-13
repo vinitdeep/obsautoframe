@@ -2,6 +2,11 @@
 
 ## 1.1.2 - webcam / phone camera close to the person
 
+* **New: macOS.** `VMedia-AI-AutoFrame-1.1.2-macOS.dmg` - one universal build for Apple silicon and
+  Intel Macs (macOS 13.4+, OBS 30+), with a .pkg installer. *Use GPU* runs through Core ML. Tested
+  on GitHub's Mac machines: unit + real-model detector tests, and the plugin loaded inside the real
+  OBS 33.0.1 (Apple silicon and Intel builds). Not yet signed/notarized by Apple (see INSTALLATION.md).
+
 * **Fixed:** with a webcam or phone camera (e.g. Iriun) close to the person, the shot stayed at
   zoom 1.00x and never moved. The person runs off the bottom of the picture, so a waist-up shot
   was "bigger than the picture". Now, when the person is cut off at the bottom, AutoFrame zooms
