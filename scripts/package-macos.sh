@@ -38,6 +38,13 @@ PLUGIN="$BUILD/vmedia-ai-autoframe.plugin"
 BIN="$PLUGIN/Contents/MacOS/vmedia-ai-autoframe"
 [ -f "$BIN" ] || { echo "plugin binary missing: $BIN" >&2; exit 1; }
 echo "-- plugin architectures: $(lipo -archs "$BIN")"
+# Lowest macOS the shipped binaries run on (ONNX Runtime may need newer than the plugin itself)
+minos_of() { vtool -show-build "$1" 2>/dev/null | awk '/minos/ {print $2}' | sort -V | tail -1; }
+ORT_MINOS="$(minos_of "$PLUGIN/Contents/Resources/runtime/libonnxruntime.dylib")"
+MIN_MACOS="$(printf '12.0
+%s
+' "${ORT_MINOS:-12.0}" | sort -V | tail -1)"
+echo "-- minimum macOS: plugin $(minos_of "$BIN"), ONNX Runtime ${ORT_MINOS:-?} -> package requires $MIN_MACOS"
 echo "-- linked libraries:"
 otool -L "$BIN" | sed 1d
 
@@ -100,7 +107,7 @@ cat >"$WORK/resources/welcome.html" <<EOF
 <p>AI auto-framing filter for OBS Studio by V Media Production. It keeps a preacher, presenter or
 performer framed with smooth digital pan, tilt and zoom &mdash; fully offline.</p>
 <p><b>Quit OBS Studio before you continue.</b></p>
-<p>Needs OBS Studio 30 or newer (Apple silicon or Intel), macOS 12 or newer.</p>
+<p>Needs OBS Studio 30 or newer (Apple silicon or Intel), macOS $MIN_MACOS or newer.</p>
 <p>After installing: open OBS &rarr; right-click your camera &rarr; <b>Filters</b> &rarr;
 <b>+</b> &rarr; <b>V Media AI AutoFrame</b>.</p>
 </body></html>
@@ -124,7 +131,7 @@ cat >"$WORK/distribution.xml" <<EOF
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
     <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
     <volume-check>
-        <allowed-os-versions><os-version min="12.0"/></allowed-os-versions>
+        <allowed-os-versions><os-version min="$MIN_MACOS"/></allowed-os-versions>
     </volume-check>
     <choices-outline>
         <line choice="default"><line choice="$BUNDLE_ID"/></line>
@@ -139,7 +146,8 @@ SIGN_ARGS=()
 [ -n "$INSTALLER_ID" ] && SIGN_ARGS=(--sign "$INSTALLER_ID")
 productbuild --distribution "$WORK/distribution.xml" --resources "$WORK/resources" \
 	--package-path "$WORK" ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} "$PKG"
-pkgutil --payload-files "$PKG" | head -20
+echo "-- package payload:"
+pkgutil --payload-files "$PKG" | grep -v _CodeSignature
 
 # ------------------------------------------------------------------ dmg
 ditto "$PLUGIN" "$WORK/dmg/Manual install/vmedia-ai-autoframe.plugin"
@@ -147,7 +155,7 @@ cat >"$WORK/dmg/READ ME FIRST.txt" <<EOF
 V Media AI AutoFrame $VERSION for macOS - by V Media Production
 =====================================================================
 
-Requirements: OBS Studio 30 or newer, macOS 12 (Monterey) or newer, Apple silicon or Intel Mac.
+Requirements: OBS Studio 30 or newer, macOS $MIN_MACOS or newer, Apple silicon or Intel Mac.
 
 INSTALL (recommended)
   1. Quit OBS Studio.
